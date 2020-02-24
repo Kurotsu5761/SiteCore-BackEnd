@@ -16,40 +16,86 @@ namespace Library.Core.Repository
             _connectionString = connectionString;
         }
         #region books
-        public IEnumerable<Books> GetBooks(int filter = 0 , int pageNumber = 1, int pageSize = 0, string sortBy = "Title")
+        public (IEnumerable<Books> books, int total) GetBooks(int filter = 0 , int pageNumber = 1, int pageSize = 0, string sortBy = "Title")
         {
 
             int startIndex = (pageNumber - 1) * pageSize;
             using (var conn = new SqlConnection(_connectionString))
             {
                 conn.Open();
-                string command = @"Select * from Books order by " + sortBy;
-                command += " Offset " + startIndex + " rows";
-                command += " fetch next " + pageSize + " rows only";
+                string command = @"Select b.*, c.Name as CategoryName, c.Id as CategoryId, t.UserId as UserId from 
+                                        Books b, Category c, Transaction t
+                                        where b.categoryId = c.Id and t.BookId = b.Id
+                                        order by " + sortBy;
                 SqlCommand sqlCommand = conn.CreateCommand();
                 sqlCommand.CommandText = command;
                 sqlCommand.CommandType = CommandType.Text;
 
                 SqlDataAdapter adapter = new SqlDataAdapter(sqlCommand);
-                DataSet dbtable = new DataSet();
-                adapter.Fill(dbtable);
+                DataSet dbSet = new DataSet();
+                adapter.Fill(dbSet);
 
-                DataTable dt = dbtable.Tables["Table"];
+                DataTable booksTable = dbSet.Tables["Table"];
+                int total = booksTable.Rows.Count;
+                
 
-                if(dt != null && dt.Rows.Count > 0) {
-                    List<int> Ids = dt.AsEnumerable().Select(_ => (int)_["Id"]).ToList();
-                    string nextCommand = @"Select a.* from Authors a inner join Publishes p on a.id = p.AuthorId where p.BooksId in ({BookIds})";
+                if(booksTable != null && booksTable.Rows.Count > 0) {
+
+                    var books = booksTable.AsEnumerable().Select(_ => new Books
+                    {
+                        Id = (int)_["Id"],
+                        Title = _["Title"].ToString(),
+                        Subtitle = _["Subtitle"].ToString(),
+                        BookStatus = getBookStatus((int)_["BookStatus"]),
+                        ImageUrl = _["ImageUrl"].ToString(),
+                        CurrentUser = new User { UserId = (int)_["UserId"] }
+                    }).ToList();
+
+
+                    //Get the Authors
+                    List<int> Ids = booksTable.AsEnumerable().Select(_ => (int)_["Id"]).ToList();
+                    string nextCommand = @"Select a.*, p.BookId from Authors a inner join Publishes p on a.id = p.AuthorId where p.BooksId in ({BookIds})";
                     sqlCommand.AddArrayParameters("BookIds", Ids);
 
                     sqlCommand.CommandText = nextCommand;
                     SqlDataAdapter nexAdapter = new SqlDataAdapter(sqlCommand);
-                    dbtable = new DataSet();
-                    adapter.Fill(dbtable);
+                    dbSet = new DataSet();
+                    adapter.Fill(dbSet);
+                    DataTable authorTable = dbSet.Tables["Table"];
+
+                    var authors = authorTable.AsEnumerable().Select(_ =>
+                    {
+                        return ((int)_["BookId"], new Author
+                        {
+                            Name = _["Name"].ToString(),
+                            Id = (int)_["Id"],
+                            ImageUrl = _["ImageUrl"].ToString()
+                        });
+                    }).ToList();
+
+                    if(authorTable != null && authorTable.Rows.Count > 0)
+                    {
+                        foreach( Books book in books)
+                        {
+                            book.Authors = authors.Select(_ =>
+                            {
+                                if (_.Item1 == book.Id)
+                                    return _.Item2;
+                                return null;
+                            }).ToList();
+                        }
+                    }
+
+                    return (books, total);
                 } else {
-                    return null;
+                    return (null, 0);
                 }
-                return null;
             }
+        }
+        
+        public Books GetBookById(int id)
+        {
+            return null;
         }
 
         public void AddBook(Books book)
@@ -62,10 +108,20 @@ namespace Library.Core.Repository
            
         }
 
+        public void AddCategory(Category category)
+        {
+
+        }
+
         #endregion
 
         #region author
         public IEnumerable<Author> GetAuthors()
+        {
+            return null;
+        }
+
+        public Author GetAuthorById(int id)
         {
             return null;
         }
@@ -79,15 +135,28 @@ namespace Library.Core.Repository
 
         #region process
 
-        public void Rent(string username, List<int> bookIds)
+        public void Rent(string username, int bookId)
         {
 
         }
 
 
-        public void Return(string username, List<int> booksIds)
+        public void Return(string username, int bookId)
         {
 
+        }
+
+        private string getBookStatus(int bookStatus)
+        {
+            switch (bookStatus)
+            {
+               
+                case 1:
+                    return "Rented";
+                case 0:
+                default:
+                    return "Available";
+            }
         }
         #endregion
     }

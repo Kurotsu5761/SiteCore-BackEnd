@@ -6,6 +6,7 @@ using Library.Core.Repository;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Configuration;
+using SiteCore_BackEnd.Common;
 
 namespace SiteCore_BackEnd.Controllers
 {
@@ -15,10 +16,12 @@ namespace SiteCore_BackEnd.Controllers
     {
         protected ILibraryRepository _libraryRepository { get; set; }
         protected IUserRepository _userRepository { get; set; }
+        protected IAuthService _authService { get; set; }
         public BaseController(IConfiguration config)
         {
             _libraryRepository = new LibraryRepository(config.GetConnectionString("DefaultConnection"));
             _userRepository = new UserRepository(config.GetConnectionString("DefaultConnection"));
+            _authService = new AuthService(_userRepository, config);
         }
     }
 }

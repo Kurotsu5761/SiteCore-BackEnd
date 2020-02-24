@@ -14,9 +14,13 @@ namespace Library.Core.Models
         
         public string ImageUrl { get; set; }
 
-        public List<int> AuthorIds { get; set; }
-
         public string BookStatus { get; set; }
+
+        public User CurrentUser { get; set; }
+
+        public DateTime DateRented { get; set; }
+
+        public Category Category { get; set; }
 
         public List<Author> Authors { get; set; }
     }

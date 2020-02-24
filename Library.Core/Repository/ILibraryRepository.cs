@@ -7,12 +7,15 @@ namespace Library.Core.Repository
 {
     public interface ILibraryRepository
     {
-        IEnumerable<Books> GetBooks(int filter = 0, int pageNumber = 1, int pageSize = 0, string sortBy = "Title");
+        (IEnumerable<Books> books,int total) GetBooks(int filter = 0, int pageNumber = 1, int pageSize = 0, string sortBy = "Title");
+        Books GetBookById(int id);
         void AddBook(Books book);
         void EditBook(Books book);
+        void AddCategory(Category category);
         IEnumerable<Author> GetAuthors();
+        Author GetAuthorById(int id);
         void AddAuthor(Author author);
-        void Rent(string username, List<int> bookIds);
-        void Return(string username, List<int> booksIds);
+        void Rent(string username, int bookId);
+        void Return(string username, int booksId);
     }
 }
