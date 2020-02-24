@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using System.Web;
+using Library.Core.Models;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Configuration;
@@ -19,7 +20,7 @@ namespace SiteCore_BackEnd.Controllers
             
         }
 
-        [HttpGet, Route("login")]
+        [HttpGet, Route("/api/login")]
         public User Login(string username)
         {
             var user = _authService.Authenticate(username); 
@@ -30,7 +31,7 @@ namespace SiteCore_BackEnd.Controllers
             return user;
         }
 
-        [HttpPost, Route("register")]
+        [HttpPost, Route("/api/register")]
         public User Register(string username)
         {
             _userRepository.Register(username);
@@ -38,35 +39,35 @@ namespace SiteCore_BackEnd.Controllers
         }
         
         [HttpGet("books")]
-        public List<BookModel> GetUserBooks()
+        public List<Books> GetUserBooks()
         {
             var token = this.Request.Headers["Authorization"].ToString().Split(" ");
-            if (token[0].Equals("Bearer"))
-                throw new HttpException(403, "Not Authorized");
 
-            var user = _authService.Authorize(token[1]);
-
-            if (user == null)
-                throw new HttpException(403, "Not Authorized");
-            
-            return null;
+            try
+            {
+                var user = authorize(token);
+                return _libraryRepository.GetBooks(user.UserId, 2, 1, int.MaxValue).books;
+            }
+            catch
+            {
+                throw;
+            }
         }
 
         [HttpGet("history")]
-        public List<BookModel> GetHitory()
+        public List<Books> GetHitory()
         {
             var token = this.Request.Headers["Authorization"].ToString().Split(" ");
-            if (token[0].Equals("Bearer"))
-                throw new HttpException(403, "Not Authorized");
 
-            var user = _authService.Authorize(token[1]);
-
-            if (user == null)
-                throw new HttpException(403, "Not Authorized");
-
-
-
-            return null;
+            try
+            {
+                var user = authorize(token);
+                return _userRepository.GetUserHistory(user.UserId);
+            }
+            catch
+            {
+                throw;
+            }
         }
     }
 }

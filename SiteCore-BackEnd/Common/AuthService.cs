@@ -35,8 +35,8 @@ namespace SiteCore_BackEnd.Common
             {
                 Subject = new ClaimsIdentity(new Claim[]
                 {
-                    new Claim(ClaimTypes.NameIdentifier, user.UserId.ToString()),
-                    new Claim(ClaimTypes.Name, user.EmailAddress),
+                    new Claim("UserId", user.UserId.ToString()),
+                    new Claim("EmailAddress", user.EmailAddress),
                     new Claim("IsAdmin", true.ToString()),
                 }),
                 Expires = DateTime.UtcNow.AddDays(7),
@@ -54,8 +54,8 @@ namespace SiteCore_BackEnd.Common
             {
                 var read = tokenHandler.ReadJwtToken(token);
 
-                var id = int.Parse(read.Claims.First(claim => claim.Type == ClaimTypes.NameIdentifier).Value);
-                var emailAddress = read.Claims.First(claim => claim.Type == ClaimTypes.Name).Value;
+                var id = int.Parse(read.Claims.First(claim => claim.Type == "UserId").Value);
+                var emailAddress = read.Claims.First(claim => claim.Type == "EmailAddress").Value;
                 var isAdmin = bool.Parse(read.Claims.First(claim => claim.Type == "IsAdmin").Value);
 
                 if ( String.IsNullOrEmpty(emailAddress))
@@ -66,9 +66,9 @@ namespace SiteCore_BackEnd.Common
                 User user = new User() { EmailAddress = emailAddress, UserId = id, IsAdmin = isAdmin };
                 return user;
             }
-            catch
+            catch (Exception)
             {
-                return null;
+                throw;
             }
         }
     }

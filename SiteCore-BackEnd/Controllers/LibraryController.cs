@@ -11,26 +11,32 @@ using SiteCore_BackEnd.Models;
 
 namespace SiteCore_BackEnd.Controllers
 {
-    [Route("api/[controller]")]
+    [Route("api/library")]
     [ApiController]
     public class LibraryController : BaseController
     {
         public LibraryController(IConfiguration config) : base(config) { }
 
         [HttpGet("books")]
-        public PaginatedBook GetBooks(BookFilter filter, int page = 1, int pageSize = 10, string sortBy = "Title")
-        {
+        public PaginatedBook GetBooks(BookFilter filter = BookFilter.All, int page = 1, int pageSize = 10, string sortBy = "Title")
+        {       
             try
             {
-                //calls to AzureFunctions
-                var paginatedBooks = _libraryRepository.GetBooks((int)filter, page, pageSize, sortBy);
-                var books = paginatedBooks.books.ToList();
+                int userId = 0;
+                if(filter == BookFilter.Own)
+                {
+                    var token = this.Request.Headers["Authorization"].ToString().Split(" ");
+
+                    var user = authorize(token);
+                    userId = user.UserId;
+                }
+                var paginatedBooks = _libraryRepository.GetBooks(userId, (int)filter, page, pageSize, sortBy);
+                var books = paginatedBooks.books;
                 return new PaginatedBook( books, paginatedBooks.total);
             }
-            catch (Exception ex)
+            catch (Exception)
             {
-                //log exception
-                throw new Exception(ex.Message);
+                throw;
             }
         }
 
@@ -39,10 +45,7 @@ namespace SiteCore_BackEnd.Controllers
         {
             try
             {
-
-                return _libraryRepository.GetBookById(id);
-                
-
+                return _libraryRepository.GetBookById(id);   
             } 
             catch (Exception ex)
             {
@@ -51,7 +54,7 @@ namespace SiteCore_BackEnd.Controllers
         }
 
         [HttpPost("book")]
-        public void AddBook(BookModel book)
+        public void AddBook(Books book)
         {
             var token = this.Request.Headers["Authorization"].ToString().Split(" ");
 
@@ -71,7 +74,7 @@ namespace SiteCore_BackEnd.Controllers
         }
 
         [HttpPut("book/{id}")]
-        public void EditBook(BookModel book)
+        public void EditBook(Books book)
         {
             var token = this.Request.Headers["Authorization"].ToString().Split(" ");
 
@@ -93,7 +96,14 @@ namespace SiteCore_BackEnd.Controllers
         [HttpGet("authors")]
         public List<Author> GetAuthors()
         {
-            return null;
+            try
+            {
+                return _libraryRepository.GetAuthors();
+            }
+            catch
+            {
+                throw;
+            }
         }
 
         [HttpGet("authors/{id}")]
@@ -111,7 +121,7 @@ namespace SiteCore_BackEnd.Controllers
         }
 
         [HttpPost("author")]
-        public void AddAuthor(AuthorModel author)
+        public void AddAuthor(Author author)
         {
             if (string.IsNullOrEmpty(author.Name))
                 throw new HttpException(400, "Bad Request");
@@ -142,6 +152,19 @@ namespace SiteCore_BackEnd.Controllers
             }
         }
 
+        [HttpGet("categories")]
+        public List<Category> GetCategories()
+        {
+            try
+            {
+                return _libraryRepository.GetCategories();
+            }
+            catch
+            {
+                throw;
+            }
+        }
+
         [HttpPost("rent")]
         public void Rent(int bookId)
         {
@@ -150,7 +173,8 @@ namespace SiteCore_BackEnd.Controllers
             var user = authorize(token);
             try
             {
-                _libraryRepository.Rent(user.EmailAddress, bookId);
+                _libraryRepository.UpdateBookStatus(bookId, 1);
+                _libraryRepository.CreateTransaction(user.UserId, bookId);
 
             }
             catch
@@ -169,27 +193,20 @@ namespace SiteCore_BackEnd.Controllers
             var user = authorize(token);
             try
             {
-                _libraryRepository.Return(user.EmailAddress, bookId);
+                //TODO: Check if current user is the one holding the book
+                var transactionId = _libraryRepository.GetRentedByBookId(user.UserId, bookId);
+                if(transactionId != 0)
+                {
+                    _libraryRepository.UpdateTransaction(transactionId);
+                    _libraryRepository.UpdateBookStatus(bookId, 0);
+                }
 
-            }catch
+            }
+            catch
             {
                 throw;
             }
             
-        }
-
-
-        private User authorize(string[] token)
-        {
-            if (token[0].Equals("Bearer"))
-                throw new HttpException(403, "Not Authorized");
-
-            var user = _authService.Authorize(token[1]);
-            if( user == null)
-                throw new HttpException(403, "Not Authorized");
-
-
-            return _authService.Authorize(token[1]);
         }
     }
 }

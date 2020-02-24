@@ -18,7 +18,7 @@ namespace Library.Core.Models
 
         public User CurrentUser { get; set; }
 
-        public DateTime DateRented { get; set; }
+        public DateTime? DateRented { get; set; }
 
         public Category Category { get; set; }
 

@@ -31,6 +31,24 @@ namespace SiteCore_BackEnd
             services.AddSwaggerGen(c =>
             {
                 c.SwaggerDoc("v1", new OpenApiInfo { Title = "Library API", Version = "v1" });
+                c.AddSecurityDefinition("Authorization",
+                    new Microsoft.OpenApi.Models.OpenApiSecurityScheme
+                    {
+                        Description = "Enter Authorization Key",
+                        Name = "Authorization",
+                        In = Microsoft.OpenApi.Models.ParameterLocation.Header
+                    });
+                c.AddSecurityRequirement(new Microsoft.OpenApi.Models.OpenApiSecurityRequirement
+                {
+                    {new Microsoft.OpenApi.Models.OpenApiSecurityScheme
+                    {
+                        Reference = new Microsoft.OpenApi.Models.OpenApiReference
+                        {
+                            Id = "Authorization",
+                            Type = Microsoft.OpenApi.Models.ReferenceType.SecurityScheme
+                        }
+                    }, new List<string>() }
+                });
             });
         }
 

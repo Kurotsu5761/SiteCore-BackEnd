@@ -9,7 +9,7 @@ namespace SiteCore_BackEnd.Models
     public class PaginatedBook
     {
         public int Total { get; set; }
-        public List<Books> Books = new List<Books>();
+        public List<Books> Books { get; set; }
 
        public PaginatedBook(List<Books> books , int total)
         {

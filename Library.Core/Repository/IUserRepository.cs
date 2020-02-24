@@ -9,7 +9,6 @@ namespace Library.Core.Repository
     {
         User GetUserByUsername(string username);
         void Register(string username);
-        List<Books> GetUserBooks();
-        List<Books> GetUserHistory();
+        List<Books> GetUserHistory(int userId);
     }
 }
