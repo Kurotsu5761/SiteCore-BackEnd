@@ -170,12 +170,17 @@ namespace SiteCore_BackEnd.Controllers
         {
             var token = this.Request.Headers["Authorization"].ToString().Split(" ");
 
-            var user = authorize(token);
             try
             {
+                var user = authorize(token);
                 _libraryRepository.UpdateBookStatus(bookId, 1);
                 _libraryRepository.CreateTransaction(user.UserId, bookId);
 
+                var books = _libraryRepository.GetBooks(user.UserId, 2, 1, int.MaxValue).books;
+                List<string> bookTitle = books.Select(_ => _.Title).ToList();
+                _mailService.Send(user.EmailAddress, "Rent A Book", 
+                    string.Format("You currently hold the following books from our library: {0}", string.Join(",", bookTitle))
+                );
             }
             catch
             {
@@ -190,9 +195,10 @@ namespace SiteCore_BackEnd.Controllers
         {
             var token = this.Request.Headers["Authorization"].ToString().Split(" ");
             
-            var user = authorize(token);
+           
             try
             {
+                var user = authorize(token);
                 //TODO: Check if current user is the one holding the book
                 var transactionId = _libraryRepository.GetRentedByBookId(user.UserId, bookId);
                 if(transactionId != 0)
@@ -200,6 +206,21 @@ namespace SiteCore_BackEnd.Controllers
                     _libraryRepository.UpdateTransaction(transactionId);
                     _libraryRepository.UpdateBookStatus(bookId, 0);
                 }
+
+                var books = _libraryRepository.GetBooks(user.UserId, 2, 1, int.MaxValue).books;
+                string message;
+                if (books != null || books.Count != 0)
+                {
+                    List<string> bookTitle = books.Select(_ => _.Title).ToList();
+                    message = string.Format("You still hold the following books from our library: {0}", string.Join(",", bookTitle));
+                    
+                }
+                else
+                {
+                    message = "Thank you, you had return all the books.";
+                }
+                _mailService.Send(user.EmailAddress, "Return A Book",message
+                    );
 
             }
             catch

@@ -19,6 +19,7 @@ namespace SiteCore_BackEnd.Controllers
         protected IUserRepository _userRepository { get; set; }
         protected IAnalyticRepository _analyticRepository { get; set; }
         protected IAuthService _authService { get; set; }
+        protected IMailService _mailService { get; set; }
 
         public BaseController(IConfiguration config)
         {
@@ -26,6 +27,9 @@ namespace SiteCore_BackEnd.Controllers
             _userRepository = new UserRepository(config.GetConnectionString("DefaultConnection"));
             _analyticRepository = new AnalyticRepository(config.GetConnectionString("DefaultConnection"));
             _authService = new AuthService(_userRepository, config);
+            _mailService = new MailService(
+                config.GetValue<string>("Email"),
+            config.GetValue<string>("SMTPProvider"));
         }
 
         protected User authorize(string[] token)
