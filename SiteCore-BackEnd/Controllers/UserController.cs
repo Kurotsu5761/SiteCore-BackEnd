@@ -37,6 +37,12 @@ namespace SiteCore_BackEnd.Controllers
             _userRepository.Register(username);
             return _authService.Authenticate(username);
         }
+
+        [HttpPut, Route("/users/make-admin")]
+        public void MakeAdmin(int userId)
+        {
+            _userRepository.AddAdmin(userId);
+        }
         
         [HttpGet("books")]
         public List<Books> GetUserBooks()
@@ -46,7 +52,8 @@ namespace SiteCore_BackEnd.Controllers
             try
             {
                 var user = authorize(token);
-                return _libraryRepository.GetBooks(user.UserId, 2, 1, int.MaxValue).books;
+                var books = _libraryRepository.GetBooks(user.UserId, 2, 1, int.MaxValue).books;
+                return books;
             }
             catch
             {

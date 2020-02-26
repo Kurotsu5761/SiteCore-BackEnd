@@ -18,6 +18,38 @@ namespace Library.Core.Repository
             _connectionString = connectionString;
         }
 
+        public List<User> GetUsers()
+        {
+            using (var conn = new SqlConnection(_connectionString))
+            {
+                conn.Open();
+                string command = @"Select * from [User]";
+                SqlCommand sqlCommand = conn.CreateCommand();
+                sqlCommand.CommandText = command;
+                sqlCommand.CommandType = CommandType.Text;
+
+                SqlDataAdapter adapter = new SqlDataAdapter(sqlCommand);
+                DataSet dbSet = new DataSet();
+                adapter.Fill(dbSet);
+
+                DataTable userTable = dbSet.Tables["Table"];
+                if (userTable != null && userTable.Rows.Count != 0)
+                {
+                    var users = userTable.AsEnumerable().Select(_ => new User
+                    {
+                        UserId = (int)_["UserId"],
+                        EmailAddress = _["EmailAddress"].ToString(),
+                        IsAdmin = (bool)_["IsAdmin"]
+                    }).ToList();
+                    return users;
+                }
+                else
+                {
+                    return null;
+                }
+            }
+        }
+
         public User GetUserByUsername(string username)
         {
             using(var conn = new SqlConnection(_connectionString))
@@ -54,12 +86,42 @@ namespace Library.Core.Repository
             using (var conn = new SqlConnection(_connectionString))
             {
                 conn.Open();
+                string getUser = @"Select * from [User] where EmailAddress =  @Username";
+                SqlCommand sqlCommand = conn.CreateCommand();
+                sqlCommand.CommandText = getUser;
+                sqlCommand.Parameters.Add(new SqlParameter() { ParameterName = "Username", Value = username, SqlDbType = SqlDbType.NVarChar });
+                SqlDataAdapter adapter = new SqlDataAdapter(sqlCommand);
+                DataSet dbSet = new DataSet();
+                adapter.Fill(dbSet);
+
+                DataTable userTable = dbSet.Tables["Table"];
+                if (userTable != null && userTable.Rows.Count != 0)
+                {
+                    throw new Exception("User already Exits");
+                }
+                
+
                 string command = @"Insert into [User] (EmailAddress, IsAdmin) values (@Username, @IsAdmin)";
+               
+                sqlCommand.CommandText = command;
+                sqlCommand.CommandType = CommandType.Text;
+                sqlCommand.Parameters.Add(new SqlParameter() { ParameterName = "IsAdmin", Value = false, SqlDbType = SqlDbType.Bit });
+
+                sqlCommand.ExecuteNonQuery();
+                conn.Close();
+            }
+        }
+
+        public void AddAdmin(int userId)
+        {
+            using (var conn = new SqlConnection(_connectionString))
+            {
+                conn.Open();
+                string command = @"Update [User] set IsAdmin = 1 where UserId = @UserId";
                 SqlCommand sqlCommand = conn.CreateCommand();
                 sqlCommand.CommandText = command;
                 sqlCommand.CommandType = CommandType.Text;
-                sqlCommand.Parameters.Add(new SqlParameter() { ParameterName = "Username", Value = username, SqlDbType = SqlDbType.NVarChar });
-                sqlCommand.Parameters.Add(new SqlParameter() { ParameterName = "IsAdmin", Value = false, SqlDbType = SqlDbType.Bit });
+                sqlCommand.Parameters.Add(new SqlParameter() { ParameterName = "UserId", Value = userId, SqlDbType = SqlDbType.NVarChar });
 
                 sqlCommand.ExecuteNonQuery();
                 conn.Close();
@@ -76,6 +138,7 @@ namespace Library.Core.Repository
                                         Books b inner join Category c on b.CategoryId = c.Id
                                         full outer join LibraryTransaction t on t.BookId = b.Id
                                         where b.Id is not null 
+                                        and t.status = 0
                                         and t.UserId = @UserId";
 
                 command += " order by t.TimeOccured Desc";

@@ -165,6 +165,23 @@ namespace SiteCore_BackEnd.Controllers
             }
         }
 
+        [HttpGet("users")]
+        public List<User> GetUsers()
+        {
+            var token = this.Request.Headers["Authorization"].ToString().Split(" ");
+            try
+            {
+                var user = authorize(token);
+                if (!user.IsAdmin)
+                    throw new HttpException(403, "Not Authorized");
+                return _userRepository.GetUsers();
+            }
+            catch
+            {
+                throw;
+            }
+        }
+
         [HttpPost("rent")]
         public void Rent(int bookId)
         {
@@ -209,7 +226,7 @@ namespace SiteCore_BackEnd.Controllers
 
                 var books = _libraryRepository.GetBooks(user.UserId, 2, 1, int.MaxValue).books;
                 string message;
-                if (books != null || books.Count != 0)
+                if (books != null && books.Count != 0)
                 {
                     List<string> bookTitle = books.Select(_ => _.Title).ToList();
                     message = string.Format("You still hold the following books from our library: {0}", string.Join(",", bookTitle));

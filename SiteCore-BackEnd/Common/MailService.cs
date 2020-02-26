@@ -24,20 +24,20 @@ namespace SiteCore_BackEnd.Common
                 MailMessage mail = new MailMessage();
                 SmtpClient SmtpServer = new SmtpClient(_server);
 
-                mail.From = new MailAddress(userEmail);
+                mail.From = new MailAddress(_sender);
                 mail.To.Add(userEmail);
                 mail.Subject = title;
                 mail.Body = message;
 
                 SmtpServer.Port = 25;
-                SmtpServer.Credentials = new System.Net.NetworkCredential("me", "password");
-                SmtpServer.EnableSsl = true;
+                SmtpServer.Credentials = new System.Net.NetworkCredential("user@gmail.com", "passwprd"); //SMTP will fail here
+                SmtpServer.EnableSsl = false;
 
                 SmtpServer.Send(mail);
             }
             catch
             {
-                throw;
+                return;
             }
 
         }

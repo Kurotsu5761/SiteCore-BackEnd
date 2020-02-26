@@ -7,6 +7,7 @@ namespace Library.Core.Repository
 {
     public interface IAnalyticRepository
     {
+        List<Analytic> GetAnalytics();
         List<Analytic> GetAnalyticByCategory(int categoryId);
         List<Analytic> GetAnalyticByAuthor(int authorId);
         List<Analytic> GetAnalyticByUser(int userId);

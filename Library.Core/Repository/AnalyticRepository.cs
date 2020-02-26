@@ -17,6 +17,29 @@ namespace Library.Core.Repository
             _connectionString = connectionString;
         }
 
+        public List<Analytic> GetAnalytics()
+        {
+            using (var conn = new SqlConnection(_connectionString))
+            {
+                conn.Open();
+                string command = @"Select u.EmailAddress, u.UserId, b.Title, t.TimeOccured as DateRented, c.Id as CategoryId
+                    , c.Name as CategoryName from [User] u 
+                inner join LibraryTransaction t on u.UserId =  t.UserId 
+                inner join Books b on b.Id = t.BookId
+                inner join Category c on c.Id = b.CategoryId";
+                SqlCommand sqlCommand = conn.CreateCommand();
+                sqlCommand.CommandText = command;
+                sqlCommand.CommandType = CommandType.Text;
+
+                SqlDataAdapter adapter = new SqlDataAdapter(sqlCommand);
+                DataSet dbSet = new DataSet();
+                adapter.Fill(dbSet);
+
+                DataTable analyticTable = dbSet.Tables["Table"];
+                return Transform(analyticTable);
+            }
+        }
+
         public List<Analytic> GetAnalyticByCategory(int categoryId)
         {
             using (var conn = new SqlConnection(_connectionString))

@@ -95,7 +95,7 @@ namespace Library.Core.Repository
 
                     return (books, total);
                 } else {
-                    return (null, 0);
+                    return (new List<Books>(), 0);
                 }
             }
         }
